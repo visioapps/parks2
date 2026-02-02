@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Étapes de Parks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: white;
+      padding: 10px 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      text-align: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .header h1 { color:#2c5282; font-size:18px; font-weight:600; }
+
+    .parks-menu {
+      position:absolute; top:50%; right:16px;
+      transform:translateY(-50%);
+      font-size:18px; color:#718096;
+      background:none; border:none; cursor:pointer;
+      transition: color 0.3s;
+    }
+    .parks-menu:hover { color:#2c5282; }
+
+    /* ===== LAYOUT ===== */
+    .parks-container {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      max-width:500px;
+      margin:0 auto;
+      width:100%;
+      padding:10px 16px;
+      gap:8px;
+      min-height:0;
+    }
+
+    /* ===== NAV TABS ===== */
+    .navigation {
+      display:flex; gap:8px;
+      background:white;
+      padding:8px;
+      border-radius:12px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+      flex-shrink:0;
+    }
+
+    .nav-btn {
+      flex:1;
+      padding:10px 4px;
+      border:none;
+      background:#e2e8f0;
+      color:#4a5568;
+      border-radius:8px;
+      font-size:12px;
+      font-weight:500;
+      cursor:pointer;
+      transition:all 0.3s ease;
+      text-align:center;
+      line-height:1.3;
+    }
+    .nav-btn.active {
+      background:linear-gradient(135deg,#4299e1 0%,#3182ce 100%);
+      color:white;
+      box-shadow:0 4px 12px rgba(66,153,225,0.3);
+    }
+
+    /* ===== CARTE avec overflow cachée pour le slide ===== */
+    .card-viewport {
+      flex:1;
+      background:white;
+      border-radius:16px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.08);
+      overflow:hidden;
+      position:relative;
+      min-height:0;
+      touch-action:pan-y;
+    }
+
+    /* les 3 "pages" côte à côte */
+    .card-track {
+      display:flex;
+      width:300%;          /* 3 panneaux */
+      height:100%;
+      transition: transform 0.38s cubic-bezier(.4,0,.2,1);
+    }
+
+    .card-page {
+      width:33.3333%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:14px 16px;
+    }
+
+    /* ===== ZONE GRISE + VISAGE (grande comme epicanthus) ===== */
+    .eye-display {
+      background:linear-gradient(180deg,#f7fafc 0%,#edf2f7 100%);
+      border-radius:12px;
+      padding:30px 20px;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+      position:relative;
+    }
+
+    .face {
+      position:relative;
+      width:220px;
+      height:180px;
+      background:linear-gradient(135deg,#ffd4c4 0%,#ffcab8 100%);
+      border-radius:50%;
+      box-shadow:0 4px 15px rgba(0,0,0,0.1);
+      transition:transform 0.4s ease;
+    }
+
+    .nose {
+      position:absolute;
+      left:50%; top:55%;
+      transform:translate(-50%,-50%);
+      width:0; height:0;
+      border-left:14px solid transparent;
+      border-right:14px solid transparent;
+      border-bottom:38px solid #ffb89d;
+      border-radius:3px;
+      z-index:1;
+    }
+
+    .eyes-container {
+      position:absolute;
+      width:100%;
+      top:45%;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-around;
+      align-items:center;
+      padding:0 15px;
+    }
+
+    .eye {
+      width:55px; height:32px;
+      background:white;
+      border-radius:50%;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .iris {
+      width:22px; height:22px;
+      background:radial-gradient(circle at 30% 30%,#8b7355,#5d4e37);
+      border-radius:50%;
+      transition:all 0.4s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .pupil {
+      width:10px; height:10px;
+      background:#000;
+      border-radius:50%;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .light-reflex {
+      position:absolute;
+      width:3px; height:3px;
+      background:white;
+      border-radius:50%;
+      box-shadow:0 0 2px rgba(255,255,255,0.8);
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+    }
+
+    /* ===== BADGES côté droit du visage ===== */
+    .badges-col {
+      position:absolute;
+      right:10px;
+      top:50%;
+      transform:translateY(-50%);
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+      z-index:3;
+    }
+
+    .badge {
+      background:white;
+      border:1.5px solid #e2e8f0;
+      border-radius:20px;
+      padding:5px 10px;
+      font-size:11px;
+      font-weight:600;
+      color:#718096;
+      cursor:pointer;
+      transition:all 0.25s ease;
+      white-space:nowrap;
+      box-shadow:0 1px 4px rgba(0,0,0,0.06);
+      user-select:none;
+      -webkit-user-select:none;
+    }
+
+    .badge:active { transform:scale(0.94); }
+
+    .badge.visible {
+      border-color:#4299e1;
+      background:linear-gradient(135deg,#ebf4ff 0%,#dbeafe 100%);
+      color:#2c5282;
+    }
+
+    .badge .badge-label {
+      opacity:0.5;
+      font-weight:500;
+    }
+
+    .badge.visible .badge-label {
+      opacity:1;
+    }
+
+    .badge .badge-val {
+      font-weight:700;
+      margin-left:2px;
+    }
+    .step-indicator {
+      margin-top:18px;
+      font-size:15px;
+      color:#4a5568;
+      font-weight:500;
+      text-align:center;
+      min-height:24px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .step-indicator .highlight {
+      color:#2c5282;
+      font-weight:600;
+      margin-left:4px;
+    }
+
+    /* ===== BOUTONS ROND avec flèches (arrow-btn epicanthus) ===== */
+    .controls {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:24px;
+      margin-top:18px;
+      flex-shrink:0;
+    }
+
+    .arrow-btn {
+      width:56px; height:56px;
+      border-radius:50%;
+      border:none;
+      background:linear-gradient(135deg,#4299e1 0%,#3182ce 100%);
+      color:white;
+      font-size:24px;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(66,153,225,0.3);
+      transition:all 0.25s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .arrow-btn:active { transform:scale(0.93); }
+
+    /* état gris = le côté opposé est choisi */
+    .arrow-btn.grey {
+      background:#e2e8f0;
+      color:#4a5568;
+      box-shadow:0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    /* ===== DOTS ===== */
+    .dots {
+      display:flex;
+      justify-content:center;
+      gap:6px;
+      flex-shrink:0;
+    }
+    .dot {
+      width:6px; height:6px;
+      border-radius:50%;
+      background:#cbd5e0;
+      transition:all 0.3s ease;
+    }
+    .dot.active {
+      background:#4299e1;
+      width:18px;
+      border-radius:3px;
+    }
+
+    /* ===== RÉSULTAT ===== */
+    .parks-result {
+      flex-shrink:0;
+      background:white;
+      border-radius:12px;
+      padding:10px 14px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    }
+    .parks-muscle-label { font-size:14px; font-weight:600; color:#2d3748; }
+    .parks-muscle-label b { color:#2c5282; }
+    .parks-antagoniste-label { font-size:13px; color:#718096; margin-top:2px; }
+
+    /* ===== ACTIONS ===== */
+    .parks-actions {
+      display:flex; gap:10px;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .parks-action-btn {
+      padding:9px 22px;
+      border:none;
+      background:linear-gradient(135deg,#4299e1 0%,#3182ce 100%);
+      color:white;
+      border-radius:8px;
+      font-size:13px;
+      font-weight:500;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(66,153,225,0.3);
+      transition:all 0.2s ease;
+    }
+    .parks-action-btn:active { transform:scale(0.95); }
+
+    /* ===== MODAL ===== */
+    .parks-modal-bg {
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.3);
+      display:flex; align-items:center; justify-content:center;
+      z-index:9999;
+    }
+    .parks-modal {
+      background:white;
+      border-radius:16px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.15);
+      padding:28px 22px;
+      width:90%; max-width:340px;
+      color:#2d3748; font-size:14px;
+      text-align:center;
+    }
+    .parks-modal-title { font-size:17px; font-weight:600; color:#2c5282; margin-bottom:10px; }
+    .parks-modal p { color:#4a5568; line-height:1.5; }
+    .parks-modal-btn {
+      margin-top:18px; padding:9px 22px;
+      border:none;
+      background:linear-gradient(135deg,#4299e1 0%,#3182ce 100%);
+      color:white; border-radius:8px;
+      font-size:14px; font-weight:500; cursor:pointer;
+      box-shadow:0 4px 12px rgba(66,153,225,0.3);
+    }
+    .parks-modal-btn:active { transform:scale(0.96); }
+
+    /* ===== PETIT ÉCRAN ===== */
+    @media (max-height: 660px) {
+      .eye-display { padding:20px 16px; }
+      .face { width:190px; height:155px; }
+      .eye { width:48px; height:28px; }
+      .iris { width:19px; height:19px; }
+      .pupil { width:9px; height:9px; }
+      .nose { border-left-width:12px; border-right-width:12px; border-bottom-width:32px; }
+      .step-indicator { margin-top:12px; font-size:14px; }
+      .controls { margin-top:12px; gap:20px; }
+      .arrow-btn { width:48px; height:48px; font-size:20px; }
+      .card-page { padding:10px 14px; }
+      .badge { font-size:10px; padding:4px 8px; }
+      .badges-col { right:8px; gap:4px; }
+    }
+
+    @media (max-height: 580px) {
+      .eye-display { padding:14px 12px; }
+      .face { width:160px; height:130px; }
+      .eye { width:42px; height:24px; }
+      .iris { width:16px; height:16px; }
+      .pupil { width:7px; height:7px; }
+      .nose { border-left-width:10px; border-right-width:10px; border-bottom-width:26px; }
+      .step-indicator { margin-top:8px; font-size:13px; }
+      .controls { margin-top:8px; gap:18px; }
+      .arrow-btn { width:42px; height:42px; font-size:18px; }
+      .parks-container { gap:5px; padding:6px 14px; }
+      .card-page { padding:6px 12px; }
+      .badge { font-size:9px; padding:3px 7px; }
+      .badges-col { right:6px; gap:3px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Étapes de Parks</h1>
+  <button class="parks-menu" id="parksMenuBtn" title="À propos">ℹ</button>
+</div>
+
+<div class="parks-container">
+
+  <!-- NAV TABS -->
+  <div class="navigation">
+    <button class="nav-btn active" data-step="0">Position<br>primaire</button>
+    <button class="nav-btn"        data-step="1">Versions<br>latérales</button>
+    <button class="nav-btn"        data-step="2">Tête<br>penchée</button>
+  </div>
+
+  <!-- CARTE avec slide -->
+  <div class="card-viewport" id="cardViewport">
+    <div class="card-track" id="cardTrack">
+
+      <!-- PAGE 0 : Position primaire -->
+      <div class="card-page">
+        <div class="eye-display">
+          <div class="badges-col">
+            <div class="badge" data-badge="hauteur"><span class="badge-label">H :</span><span class="badge-val"></span></div>
+            <div class="badge" data-badge="version"><span class="badge-label">V :</span><span class="badge-val"></span></div>
+            <div class="badge" data-badge="tete"><span class="badge-label">T :</span><span class="badge-val"></span></div>
+          </div>
+          <div class="face" id="theFace">
+            <div class="nose"></div>
+            <div class="eyes-container">
+              <div class="eye"><div class="iris" id="irisL"><div class="pupil"><div class="light-reflex"></div></div></div></div>
+              <div class="eye"><div class="iris" id="irisR"><div class="pupil"><div class="light-reflex"></div></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="step-indicator" id="phrase0">Hauteur : <span class="highlight" id="val0"></span></div>
+        <div class="controls">
+          <button class="arrow-btn" data-step="0" data-side="droite">←</button>
+          <button class="arrow-btn" data-step="0" data-side="gauche">→</button>
+        </div>
+      </div>
+
+      <!-- PAGE 1 : Versions latérales -->
+      <div class="card-page">
+        <div class="eye-display">
+          <div class="badges-col">
+            <div class="badge" data-badge="hauteur"><span class="badge-label">H :</span><span class="badge-val"></span></div>
+            <div class="badge" data-badge="version"><span class="badge-label">V :</span><span class="badge-val"></span></div>
+            <div class="badge" data-badge="tete"><span class="badge-label">T :</span><span class="badge-val"></span></div>
+          </div>
+          <div class="face" id="theFace1">
+            <div class="nose"></div>
+            <div class="eyes-container">
+              <div class="eye"><div class="iris" id="irisL1"><div class="pupil"><div class="light-reflex"></div></div></div></div>
+              <div class="eye"><div class="iris" id="irisR1"><div class="pupil"><div class="light-reflex"></div></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="step-indicator" id="phrase1">Augmente dans le regard à : <span class="highlight" id="val1"></span></div>
+        <div class="controls">
+          <button class="arrow-btn" data-step="1" data-side="droite">←</button>
+          <button class="arrow-btn" data-step="1" data-side="gauche">→</button>
+        </div>
+      </div>
+
+      <!-- PAGE 2 : Tête penchée -->
+      <div class="card-page">
+        <div class="eye-display">
+          <div class="badges-col">
+            <div class="badge" data-badge="hauteur"><span class="badge-label">H :</span><span class="badge-val"></span></div>
+            <div class="badge" data-badge="version"><span class="badge-label">V :</span><span class="badge-val"></span></div>
+            <div class="badge" data-badge="tete"><span class="badge-label">T :</span><span class="badge-val"></span></div>
+          </div>
+          <div class="face" id="theFace2">
+            <div class="nose"></div>
+            <div class="eyes-container">
+              <div class="eye"><div class="iris" id="irisL2"><div class="pupil"><div class="light-reflex"></div></div></div></div>
+              <div class="eye"><div class="iris" id="irisR2"><div class="pupil"><div class="light-reflex"></div></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="step-indicator" id="phrase2">Augmente tête penchée sur épaule : <span class="highlight" id="val2"></span></div>
+        <div class="controls">
+          <button class="arrow-btn" data-step="2" data-side="droite">←</button>
+          <button class="arrow-btn" data-step="2" data-side="gauche">→</button>
+        </div>
+      </div>
+
+    </div><!-- /card-track -->
+  </div><!-- /card-viewport -->
+
+  <!-- DOTS -->
+  <div class="dots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <!-- RÉSULTAT -->
+  <div class="parks-result">
+    <div class="parks-muscle-label" id="parksMuscle">Muscle atteint :</div>
+    <div class="parks-antagoniste-label" id="parksAntagoniste">Ou fibrose du m. :</div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="parks-actions">
+    <button class="parks-action-btn" id="parksCopy">Copier</button>
+    <button class="parks-action-btn" id="parksReset">Réinitialiser</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="parks-modal-bg" id="parksModal" style="display:none">
+  <div class="parks-modal">
+    <div class="parks-modal-title">À propos</div>
+    <p><strong>"Étapes de Parks"</strong><br>Version beta 2.0<br>© 2025 Fanny Lecomte.</p>
+    <button class="parks-modal-btn" id="parksModalClose">Fermer</button>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* ===== STATE ===== */
+  let currentStep = 0;
+  let selected = { hauteur: null, version: null, tete: null };
+  let noAutoAdvance = false; // bloqué quand on clique un badge
+  const stepKeys = ["hauteur","version","tete"];
+
+  /* ===== TABLE ===== */
+  const parksTable = {
+    "Hauteur droite|Regard à droite|Sur épaule droite": ["Oblique Inférieur gauche","Oblique Supérieur droit"],
+    "Hauteur droite|Regard à droite|Sur épaule gauche": ["Droit Inférieur droit","Droit Supérieur gauche"],
+    "Hauteur droite|Regard à gauche|Sur épaule droite": ["Oblique Supérieur droit","Oblique Inférieur gauche"],
+    "Hauteur droite|Regard à gauche|Sur épaule gauche": ["Droit Supérieur gauche","Droit Inférieur droit"],
+    "Hauteur gauche|Regard à droite|Sur épaule droite": ["Droit Supérieur droit","Droit Inférieur gauche"],
+    "Hauteur gauche|Regard à droite|Sur épaule gauche": ["Oblique Supérieur gauche","Oblique Inférieur droit"],
+    "Hauteur gauche|Regard à gauche|Sur épaule droite": ["Droit Inférieur gauche","Droit Supérieur droit"],
+    "Hauteur gauche|Regard à gauche|Sur épaule gauche": ["Oblique Inférieur droit","Oblique Supérieur gauche"]
+  };
+
+  /* ===== DOM ===== */
+  const navBtns       = document.querySelectorAll(".nav-btn");
+  const dotsEl        = document.querySelectorAll(".dot");
+  const cardTrack     = document.getElementById("cardTrack");
+  const cardViewport  = document.getElementById("cardViewport");
+  const muscleLabel   = document.getElementById("parksMuscle");
+  const antagonisteLabel = document.getElementById("parksAntagoniste");
+
+  // Faces par page (chaque page a son propre visage pour le slide)
+  const faces = [
+    document.getElementById("theFace"),
+    document.getElementById("theFace1"),
+    document.getElementById("theFace2")
+  ];
+  const irisLs = [
+    document.getElementById("irisL"),
+    document.getElementById("irisL1"),
+    document.getElementById("irisL2")
+  ];
+  const irisRs = [
+    document.getElementById("irisR"),
+    document.getElementById("irisR1"),
+    document.getElementById("irisR2")
+  ];
+  const valEls = [
+    document.getElementById("val0"),
+    document.getElementById("val1"),
+    document.getElementById("val2")
+  ];
+
+  /* ===== SLIDE vers l'étape n ===== */
+  function goToStep(n) {
+    currentStep = n;
+    // slide
+    cardTrack.style.transform = `translateX(-${n * 33.3333}%)`;
+    // tabs
+    navBtns.forEach((b,i) => b.classList.toggle("active", i===n));
+    // dots
+    dotsEl.forEach((d,i) => d.classList.toggle("active", i===n));
+    // rafraîchir les boutons de cette page
+    syncButtons(n);
+  }
+
+  /* ===== SYNC boutons flèches selon sélection ===== */
+  function syncButtons(step) {
+    const btns = document.querySelectorAll(`.arrow-btn[data-step="${step}"]`);
+    const val  = selected[stepKeys[step]];
+    btns.forEach(btn => {
+      const side = btn.dataset.side;
+      if (val === null) {
+        // rien sélectionné → les 2 sont bleus
+        btn.classList.remove("grey");
+      } else {
+        // le côté opposé devient gris
+        btn.classList.toggle("grey", !val.includes(side));
+      }
+    });
+  }
+
+  /* ===== CHOISIR UN CÔTÉ ===== */
+  function chooseSide(step, side) {
+    const key = stepKeys[step];
+    const valMap = {
+      hauteur: { droite:"Hauteur droite",    gauche:"Hauteur gauche" },
+      version: { droite:"Regard à droite",   gauche:"Regard à gauche" },
+      tete:    { droite:"Sur épaule droite", gauche:"Sur épaule gauche" }
+    };
+    selected[key] = valMap[key][side];
+
+    // texte highlight
+    valEls[step].textContent = side;
+
+    // sync boutons de cette page
+    syncButtons(step);
+
+    // update tous les visages + résultat + badges
+    updateAllFaces();
+    updateResult();
+    syncAllBadges();
+
+    // auto-avancer (sauf si cliqué depuis un badge)
+    if (step < 2 && !noAutoAdvance) {
+      setTimeout(() => goToStep(step + 1), 500);
+    }
+    noAutoAdvance = false;
+  }
+
+  /* ===== VISAGES progressifs : carte i montre les sélections jusqu'à l'étape i ===== */
+  function updateAllFaces() {
+    for (let i=0; i<3; i++) {
+      let leftY=0, rightY=0, leftX=0, rightX=0, rot="rotate(0deg)";
+
+      // étape 0 (hauteur) : toutes les cartes la montrent
+      if (selected.hauteur==="Hauteur droite")  leftY=-8;
+      if (selected.hauteur==="Hauteur gauche")  rightY=-8;
+
+      // étape 1 (version) : cartes 1 et 2 seulement
+      if (i >= 1) {
+        if (selected.version==="Regard à droite") { leftX=-10; rightX=-10; }
+        if (selected.version==="Regard à gauche") { leftX=10;  rightX=10; }
+      }
+
+      // étape 2 (tête) : carte 2 seulement
+      if (i >= 2) {
+        if      (selected.tete==="Sur épaule droite") rot="rotate(-14deg)";
+        else if (selected.tete==="Sur épaule gauche") rot="rotate(14deg)";
+      }
+
+      irisLs[i].style.transform = `translate(${leftX}px,${leftY}px)`;
+      irisRs[i].style.transform = `translate(${rightX}px,${rightY}px)`;
+      faces[i].style.transform   = rot;
+    }
+  }
+
+  /* ===== RÉSULTAT ===== */
+  function updateResult() {
+    const key    = [selected.hauteur, selected.version, selected.tete].join("|");
+    const result = parksTable[key] || null;
+    if (result) {
+      muscleLabel.innerHTML      = `Muscle atteint : <b>${result[0]}</b>`;
+      antagonisteLabel.innerHTML = `Ou fibrose du m. : ${result[1]}`;
+    } else {
+      muscleLabel.textContent      = "Muscle atteint :";
+      antagonisteLabel.textContent = "Ou fibrose du m. :";
+    }
+  }
+
+  /* ===== BADGES : sync texte + visibilité ===== */
+  function syncAllBadges() {
+    const labels = { hauteur:"H", version:"V", tete:"T" };
+    const allBadges = document.querySelectorAll(".badge[data-badge]");
+    allBadges.forEach(badge => {
+      const key = badge.dataset.badge;
+      const val = selected[key];
+      const valEl = badge.querySelector(".badge-val");
+      if (val) {
+        // extraire "droite" ou "gauche" du texte
+        const side = val.includes("droite") ? "droite" : "gauche";
+        valEl.textContent = side;
+        badge.classList.add("visible");
+      } else {
+        valEl.textContent = "";
+        badge.classList.remove("visible");
+      }
+    });
+  }
+  navBtns.forEach((btn,i) => btn.addEventListener("click", () => goToStep(i)));
+
+  /* ===== ARROW BTN clicks (délégation) ===== */
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".arrow-btn");
+    if (!btn) return;
+    const step = parseInt(btn.dataset.step);
+    const side = btn.dataset.side;
+    chooseSide(step, side);
+  });
+
+  /* ===== BADGE clicks : basculer droite↔gauche, rester sur la carte actuelle ===== */
+  document.addEventListener("click", (e) => {
+    const badge = e.target.closest(".badge[data-badge]");
+    if (!badge) return;
+    const key  = badge.dataset.badge;
+    const step = stepKeys.indexOf(key);
+    const val  = selected[key];
+    if (!val) return; // pas encore sélectionné, rien à faire
+
+    // basculer côté sans auto-avancer, sans changer de page
+    noAutoAdvance = true;
+    const newSide = val.includes("droite") ? "gauche" : "droite";
+    chooseSide(step, newSide);
+    // on reste sur currentStep — pas de goToStep
+  });
+  let tX=0, tY=0, swiping=false;
+  cardViewport.addEventListener("touchstart", (e)=>{ tX=e.touches[0].clientX; tY=e.touches[0].clientY; swiping=true; },{ passive:true });
+  cardViewport.addEventListener("touchmove",  (e)=>{ if(!swiping) return; if(Math.abs(e.touches[0].clientY-tY)>Math.abs(e.touches[0].clientX-tX)) swiping=false; },{ passive:true });
+  cardViewport.addEventListener("touchend",   (e)=>{
+    if(!swiping) return; swiping=false;
+    const dx=e.changedTouches[0].clientX-tX;
+    if(dx< -40 && currentStep<2) goToStep(currentStep+1);
+    if(dx>  40 && currentStep>0) goToStep(currentStep-1);
+  },{ passive:true });
+
+  /* ===== COPIER ===== */
+  document.getElementById("parksCopy").addEventListener("click", function(){
+
+    // noms courts des muscles pour le clipboard
+    const muscleShort = {
+      "Oblique Inférieur gauche":  "Oblique Inf. gauche",
+      "Oblique Inférieur droit":   "Oblique Inf. droit",
+      "Oblique Supérieur gauche":  "Oblique Sup. gauche",
+      "Oblique Supérieur droit":   "Oblique Sup. droit",
+      "Droit Inférieur gauche":    "Droit Inf. gauche",
+      "Droit Inférieur droit":     "Droit Inf. droit",
+      "Droit Supérieur gauche":    "Droit Sup. gauche",
+      "Droit Supérieur droit":     "Droit Sup. droit"
+    };
+
+    // extraire "droite" ou "gauche" de chaque sélection
+    const hSide = selected.hauteur ? (selected.hauteur.includes("droite") ? "droite" : "gauche") : "?";
+    const vSide = selected.version ? (selected.version.includes("droite") ? "droite" : "gauche") : "?";
+    const tSide = selected.tete    ? (selected.tete.includes("droite")    ? "droite" : "gauche") : "?";
+
+    // résultat depuis la table
+    const tableKey    = [selected.hauteur, selected.version, selected.tete].join("|");
+    const tableResult = parksTable[tableKey] || null;
+    const muscle      = tableResult ? muscleShort[tableResult[0]] || tableResult[0] : "N/A";
+    const antag       = tableResult ? muscleShort[tableResult[1]] || tableResult[1] : null;
+
+    let recap = `Étapes de Parks : atteinte m. ${muscle} ou fibrose du m. ${antag || "N/A"}\n- Hauteur ${hSide}\n- Augmente regard à ${vSide}\n- Augmente tête penchée sur l'épaule ${tSide}`;
+
+    if(navigator.clipboard){ navigator.clipboard.writeText(recap).then(()=>showModal("Copié dans le presse-papier !")); }
+    else {
+      const ta=document.createElement("textarea"); ta.value=recap;
+      document.body.appendChild(ta); ta.select();
+      try{document.execCommand('copy');}catch(e){}
+      document.body.removeChild(ta);
+      showModal("Copié dans le presse-papier !");
+    }
+  });
+
+  /* ===== RESET ===== */
+  document.getElementById("parksReset").addEventListener("click", function(){
+    selected = { hauteur:null, version:null, tete:null };
+    valEls.forEach(v => v.textContent="");
+    [0,1,2].forEach(i => syncButtons(i));
+    updateAllFaces();
+    updateResult();
+    syncAllBadges();
+    goToStep(0);
+  });
+
+  /* ===== MODAL ===== */
+  document.getElementById("parksMenuBtn").addEventListener("click", ()=>{ document.getElementById("parksModal").style.display="flex"; });
+  document.getElementById("parksModalClose").addEventListener("click", ()=>{ document.getElementById("parksModal").style.display="none"; });
+
+  function showModal(msg){
+    const modal=document.getElementById("parksModal");
+    const title=modal.querySelector(".parks-modal-title");
+    const body=modal.querySelector(".parks-modal p");
+    const oT=title.textContent, oB=body.innerHTML;
+    title.textContent="";
+    body.innerHTML=`<span style="font-size:1.1em;font-weight:600;color:#2d3748">${msg}</span>`;
+    modal.style.display="flex";
+    setTimeout(()=>{ modal.style.display="none"; title.textContent=oT; body.innerHTML=oB; },1200);
+  }
+
+  /* ===== INIT ===== */
+  goToStep(0);
+
+})();
+</script>
+</body>
+</html>
